@@ -1,0 +1,23 @@
+# Ignore the virtual environment folder
+myenv/
+
+# Ignore the .env file (contains sensitive information)
+.env
+
+# Ignore Python cache and build files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# Ignore IDE-specific files
+.vscode/
+.idea/
+
+# Ignore macOS system files
+.DS_Store
