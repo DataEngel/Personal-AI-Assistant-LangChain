@@ -1,8 +1,8 @@
 from dotenv import load_dotenv
 import os
-from langchain_openai import OpenAI
+from langchain_openai import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationChain
+from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain.prompts import PromptTemplate
 import pyttsx3
 
@@ -10,22 +10,21 @@ import pyttsx3
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
-# Check if the API key is loaded
 if not openai_api_key:
     raise ValueError("OPENAI_API_KEY not found in .env file. Please check your .env file.")
 
 # Initialize the OpenAI model
-llm = OpenAI(api_key=openai_api_key, model="gpt-4")
+llm = ChatOpenAI(api_key=openai_api_key, model="gpt-4-turbo")
 
 # Add memory for contextual conversations
-memory = ConversationBufferMemory()
-conversation = ConversationChain(llm=llm, memory=memory)
+memory = ConversationBufferMemory(return_messages=True)
 
-# Add a custom prompt template
-prompt = PromptTemplate(
-    input_variables=["question"],
-    template="You are a helpful AI assistant. Answer the following question: {question}"
-)
+# Function to retrieve session history
+def get_session_history(session_id: str):
+    return memory
+
+# Wrap LLM with message history
+conversation = RunnableWithMessageHistory(llm, get_session_history=get_session_history)
 
 # Function to convert text to speech
 def speak(text):
@@ -41,10 +40,12 @@ while True:
         print("Goodbye!")
         break
     try:
-        # Use the custom prompt template
-        formatted_input = prompt.format(question=user_input)
-        response = conversation.predict(input=formatted_input)
-        print(f"Assistant: {response}")
-        speak(response)  # Convert the response to speech
+        response = conversation.invoke(
+            {"messages": [{"role": "user", "content": user_input}]},
+            config={"configurable": {"session_id": "default"}}
+        )
+        assistant_reply = response["messages"][-1]["content"]
+        print(f"Assistant: {assistant_reply}")
+        speak(assistant_reply)
     except Exception as e:
         print(f"Error: {e}")
