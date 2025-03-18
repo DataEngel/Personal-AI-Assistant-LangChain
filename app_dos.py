@@ -1,60 +1,60 @@
-# Importación de librerías necesarias
-from dotenv import load_dotenv  # Para cargar variables de entorno desde .env
-import os  # Para interactuar con variables del sistema
-from llama_index.llms.openai import OpenAI  # Cliente OpenAI en LlamaIndex
-from llama_index.memory import ChatMemoryBuffer  # Memoria para mantener el historial de la conversación
-import pyttsx3  # Librería para convertir texto a voz
+# Import necessary libraries
+from dotenv import load_dotenv  # To load environment variables from .env
+import os  # To interact with system variables
+from llama_index.llms.openai import OpenAI  # OpenAI client in LlamaIndex
+from llama_index.memory import ChatMemoryBuffer  # Memory to maintain conversation history
+import pyttsx3  # Library to convert text to speech
 
-# Cargar las variables de entorno desde el archivo .env
+# Load environment variables from the .env file
 load_dotenv()
 
-# Obtener la clave de API de OpenAI desde las variables de entorno
+# Get the OpenAI API key from environment variables
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
-# Verificar si la clave de API fue cargada correctamente
+# Check if the API key was loaded correctly
 if not openai_api_key:
     raise ValueError("OPENAI_API_KEY not found in .env file. Please check your .env file.")
 
-# Inicializar el modelo de OpenAI GPT-4 Turbo con la clave de API
+# Initialize the OpenAI GPT-4 Turbo model with the API key
 llm = OpenAI(model="gpt-4-turbo", api_key=openai_api_key)
 
-# Inicializar memoria para almacenar el historial de la conversación
+# Initialize memory to store conversation history
 memory = ChatMemoryBuffer()
 
-# Función para convertir texto a voz usando pyttsx3
+# Function to convert text to speech using pyttsx3
 def speak(text):
-    engine = pyttsx3.init()  # Inicializa el motor de texto a voz
-    engine.say(text)  # Agrega el texto a la cola de reproducción
-    engine.runAndWait()  # Reproduce el audio generado
+    engine = pyttsx3.init()  # Initialize the text-to-speech engine
+    engine.say(text)  # Add the text to the playback queue
+    engine.runAndWait()  # Play the generated audio
 
-# Bucle principal de interacción con el asistente
+# Main loop for interacting with the assistant
 print("Welcome to your Personal AI Assistant. Type 'exit' to end the conversation.")
 
 while True:
-    # Solicitar entrada del usuario
+    # Prompt user for input
     user_input = input("You: ")
     
-    # Si el usuario escribe 'exit', se termina el programa
+    # If the user types 'exit', terminate the program
     if user_input.lower() == "exit":
         print("Goodbye!")
-        break  # Sale del bucle while
+        break  # Exit the while loop
     
     try:
-        # Agregar entrada del usuario a la memoria
+        # Add user input to memory
         memory.put("user", user_input)
 
-        # Generar respuesta con el modelo usando el historial de memoria
+        # Generate a response using the model with the memory history
         response = llm.complete(memory.get_history())
 
-        # Agregar respuesta del asistente a la memoria
+        # Add the assistant's response to memory
         memory.put("assistant", response.text)
 
-        # Mostrar la respuesta en pantalla
+        # Display the response on the screen
         print(f"Assistant: {response.text}")
 
-        # Convertir la respuesta en voz y reproducirla
+        # Convert the response to speech and play it
         speak(response.text)
 
     except Exception as e:
-        # Manejo de errores en caso de que falle la interacción con el modelo
+        # Handle errors in case the interaction with the model fails
         print(f"Error: {e}")
