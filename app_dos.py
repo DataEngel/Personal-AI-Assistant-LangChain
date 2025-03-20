@@ -1,60 +1,52 @@
-# Import necessary libraries
-from dotenv import load_dotenv  # To load environment variables from .env
-import os  # To interact with system variables
-from llama_index.llms.openai import OpenAI  # OpenAI client in LlamaIndex
-from llama_index.memory import ChatMemoryBuffer  # Memory to maintain conversation history
-import pyttsx3  # Library to convert text to speech
+import os
+import pyttsx3
+from dotenv import load_dotenv
+from llama_index.llms.openai import OpenAI
+from llama_index.memory import ChatMemoryBuffer
 
-# Load environment variables from the .env file
+# Cargar variables de entorno
 load_dotenv()
 
-# Get the OpenAI API key from environment variables
+# Obtener clave API
 openai_api_key = os.getenv("OPENAI_API_KEY")
-
-# Check if the API key was loaded correctly
 if not openai_api_key:
-    raise ValueError("OPENAI_API_KEY not found in .env file. Please check your .env file.")
+    raise ValueError("ERROR: OPENAI_API_KEY no encontrado en el archivo .env.")
 
-# Initialize the OpenAI GPT-4 Turbo model with the API key
+# Inicializar el modelo GPT-4 Turbo
 llm = OpenAI(model="gpt-4-turbo", api_key=openai_api_key)
 
-# Initialize memory to store conversation history
-memory = ChatMemoryBuffer()
+# Inicializar memoria con un límite de mensajes almacenados
+memory = ChatMemoryBuffer(token_limit=1000)  # Ajusta el límite según necesidades
 
-# Function to convert text to speech using pyttsx3
+# Inicializar el motor de texto a voz
+engine = pyttsx3.init()
+
 def speak(text):
-    engine = pyttsx3.init()  # Initialize the text-to-speech engine
-    engine.say(text)  # Add the text to the playback queue
-    engine.runAndWait()  # Play the generated audio
+    """Convierte texto en voz y lo reproduce."""
+    engine.say(text)
+    engine.runAndWait()
 
-# Main loop for interacting with the assistant
-print("Welcome to your Personal AI Assistant. Type 'exit' to end the conversation.")
+def get_response(user_input):
+    """Genera una respuesta del asistente basada en la memoria de conversación."""
+    try:
+        memory.put("user", user_input)  # Almacenar entrada del usuario
+        response = llm.complete(memory.get_history())  # Obtener respuesta del modelo
+        memory.put("assistant", response.text)  # Almacenar respuesta
+        return response.text
+    except Exception as e:
+        return f"Error en la respuesta del asistente: {e}"
+
+# Bucle principal de interacción
+print("\n👋 Bienvenido a tu Asistente AI. Escribe 'exit' para salir.\n")
 
 while True:
-    # Prompt user for input
-    user_input = input("You: ")
-    
-    # If the user types 'exit', terminate the program
-    if user_input.lower() == "exit":
-        print("Goodbye!")
-        break  # Exit the while loop
-    
-    try:
-        # Add user input to memory
-        memory.put("user", user_input)
+    user_input = input("🟢 Tú: ")
 
-        # Generate a response using the model with the memory history
-        response = llm.complete(memory.get_history())
+    if user_input.strip().lower() == "exit":
+        print("👋 ¡Hasta luego!")
+        break
 
-        # Add the assistant's response to memory
-        memory.put("assistant", response.text)
+    response = get_response(user_input)
 
-        # Display the response on the screen
-        print(f"Assistant: {response.text}")
-
-        # Convert the response to speech and play it
-        speak(response.text)
-
-    except Exception as e:
-        # Handle errors in case the interaction with the model fails
-        print(f"Error: {e}")
+    print(f"🤖 Asistente: {response}\n")
+    speak(response)  # Convertir la respuesta en voz
